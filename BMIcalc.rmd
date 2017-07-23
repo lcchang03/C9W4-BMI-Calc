@@ -1,0 +1,105 @@
+---
+title: "Body Mass Index (BMI) Calculator"
+author: "Lon Chang"
+date: "July 23, 2017"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Overview
+
+This presentation is for the Coursera Course 9 Week 4 assignment. The assignment is to create a shiny web application. My submission is a Body Mass Index (BMI) calculator. 
+
+The app will calculate your BMI based on your height (in inches) and weight (in lbs). Your BMI will be plotted against boundaries for different weight categories. The lines represent the right-most boundaries of each classification. For example, underweight is any combination of height/weight to the left of the underweight line.
+
+BMI = 703 * weight / ( height * height )
+
+Additional information about BMI can be found here:
+https://www.nhlbi.nih.gov/
+<u>health/educational/lose_wt/BMI/bmicalc.htm</u>
+
+
+## BMI
+
+The BMI index is a general measure of health. It takes readily available information about an individual to estimate their physical health. The BMI serves as a general indicator, but has some limitations:
+
+- Weight and height do not always scale at a square relationship as assumed by the BMI formula, and this is especially true at very short or very tall heights.
+- Body frame and muscle mass are not considered by BMI.
+- You can have a high BMI but still be happy. Isn't happiness the greatest health indicator of them all?
+
+
+## Appendix - ui.R
+```{r ui, include=TRUE, cache= TRUE, eval= FALSE, warning= FALSE, echo= TRUE}
+library(shiny)
+
+shinyUI(fluidPage(
+  
+  titlePanel("BMI Calculator"),
+  sidebarLayout(
+    sidebarPanel(
+      textInput("height", "Enter height (inches)", "68"),
+      textInput("weight", "Enter weight (lbs)", "150")
+    ),
+    
+    mainPanel(
+      h3("Your BMI is:"),
+      textOutput("bminumber"),
+      h3("You are "),
+      textOutput("bmistatus"),
+      plotOutput("plot1"),
+      h5("For additional details about Body Mass Index, please see the below link:"),
+      h6("https://www.nhlbi.nih.gov/health/educational/lose_wt/BMI/bmicalc.htm")
+    )
+  )
+))
+```
+
+
+## Appendix - server.R
+```{r server, include=TRUE, cache= TRUE, eval= FALSE, warning= FALSE, echo= TRUE}
+library(shiny)
+
+
+shinyServer(function(input, output) {
+  
+weights <- reactive({as.numeric(input$weight)})
+heights <- reactive({as.numeric(input$height)})
+  
+bmi <-  reactive({
+    703 * weights() / (heights()^2)
+    })
+
+output$bminumber <- renderText({format(bmi(),digits= 3)})
+output$bmistatus <- renderText(
+        if( bmi() < 18.5 ){
+          "underweight"
+        } else if( bmi() < 24.9) {
+          "normal weight"
+        } else if( bmi() < 29.9) {
+          "over weight"
+        } else "obese"
+      )
+
+x <- as.numeric(0)
+underh <- function(x) {(703 * x / 18.5) ^ 0.5}
+normh <- function(x) {(703 * x / 24.9) ^ 0.5}
+overh <- function(x) {(703 * x / 29.9) ^ 0.5}
+
+output$plot1 <- renderPlot({
+  curve(underh, from= 100, to= 400, 
+        xlab= "weight (lbs)", ylab= "height (in)", 
+        main= "BMI by body type", col= "yellow")
+  curve(normh, col= "orange", add= TRUE)
+  curve(overh, col= "red", add= TRUE)
+  points(weights(), heights(), pch= 19, col= "blue")
+  legend("topleft", 
+         c("underweight", "normal weight", "overweight", "your weight"), 
+         col= c("yellow", "orange", "red", "blue"),
+         lty= c(1,1,1,1))
+  })  
+
+})
+```
